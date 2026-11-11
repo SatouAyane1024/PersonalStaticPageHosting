@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Crop, scale, and export square avatars right in your browser. Your images never leave your device.">
+  <title>Avatar Studio</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23101118'/%3E%3Ccircle cx='32' cy='25' r='11' fill='%237cf7c2'/%3E%3Cpath d='M13 56c2-13 9-19 19-19s17 6 19 19' fill='%237cf7c2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    [hidden]{display:none!important}
+    .dialog-shell{max-height:95vh;overflow:auto}
+    .canvas-wrap{width:min(100%,500px,calc(100vh - 250px))}
+    .dialog-footer{position:sticky;bottom:0;background:var(--panel);z-index:2}
+  </style>
+</head>
+<body>
+  <input id="fileInput" type="file" accept="image/*" hidden>
+
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Avatar Studio Mainpage">
+      <span class="brand-mark" aria-hidden="true">〼</span>
+      <span>Avatar Studio</span>
+    </a>
+    <p class="privacy"><span aria-hidden="true">●</span> Processed locally. Images will not be uploaded.</p>
+    <div class="actions">
+      <button class="button button-secondary" id="editButton" type="button" disabled>Edit Avatar</button>
+      <button class="button button-primary" id="uploadButton" type="button">Choose Image</button>
+      <button class="button button-primary download" id="downloadButton" type="button" disabled>Download Avatar</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="pageTitle">
+      <p class="eyebrow">AVATAR STUDIO</p>
+      <h1 id="pageTitle">An avatar,<br><span>Fits EVERYWHERE</span></h1>
+      <p class="lede">Upload a photo, adjust the composition, and then check how it looks in various sizes and shapes.</p>
+    </section>
+
+    <section class="preview-section" aria-labelledby="previewTitle">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">01 / PREVIEW</p>
+          <h2 id="previewTitle">Actual display effect</h2>
+        </div>
+        <p id="imageMeta" class="image-meta">Waiting for image selection</p>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-visual" aria-hidden="true">
+          <div class="empty-head"></div><div class="empty-body"></div>
+        </div>
+        <h3>Select a picture first</h3>
+        <p>Supports common image formats; no restrictions on dimensions or aspect ratios.</p>
+        <button class="button button-primary" id="emptyUploadButton" type="button">Select from computer</button>
+      </div>
+
+      <div id="previewGrid" class="preview-grid" hidden>
+        <article class="preview-card feature-card">
+          <div class="card-label"><span>Square</span><span>320 × 320</span></div>
+          <img class="avatar square size-feature" alt="Large-size preview of square avatar">
+        </article>
+        <article class="preview-card feature-card">
+          <div class="card-label"><span>Circular</span><span>320 × 320</span></div>
+          <img class="avatar circle size-feature" alt="Large-size preview of circular avatar">
+        </article>
+        <article class="preview-card scale-card">
+          <div class="card-label"><span>Square</span><span> scale checks</span></div>
+          <div class="scale-row square-row">
+            <figure><img class="avatar square s128" alt="128px square avatar"><figcaption>128</figcaption></figure>
+            <figure><img class="avatar square s80" alt="80px square avatar"><figcaption>80</figcaption></figure>
+            <figure><img class="avatar square s48" alt="48px square avatar"><figcaption>48</figcaption></figure>
+            <figure><img class="avatar square s28" alt="28px square avatar"><figcaption>28</figcaption></figure>
+          </div>
+        </article>
+        <article class="preview-card scale-card">
+          <div class="card-label"><span>Circular</span><span> scale checks</span></div>
+          <div class="scale-row circle-row">
+            <figure><img class="avatar circle s128" alt="128px circular avatar"><figcaption>128</figcaption></figure>
+            <figure><img class="avatar circle s80" alt="80px circular avatar"><figcaption>80</figcaption></figure>
+            <figure><img class="avatar circle s48" alt="48px circular avatar"><figcaption>48</figcaption></figure>
+            <figure><img class="avatar circle s28" alt="28px circular avatar"><figcaption>28</figcaption></figure>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="editorDialog" aria-labelledby="editorTitle">
+    <div class="dialog-shell">
+      <div class="dialog-header">
+        <div><p class="section-index">02 / EDIT</p><h2 id="editorTitle">Adjust Avatar</h2></div>
+        <button class="icon-button" id="closeButton" type="button" aria-label="Close editor">×</button>
+      </div>
+      <div class="editor-body">
+        <div class="canvas-column">
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="editorCanvas" width="640" height="640" aria-label="Avatar cropping area: drag the image to adjust its position."></canvas>
+            <div class="crop-overlay" aria-hidden="true">
+              <div id="safeGuide" class="safe-guide"></div>
+              <div id="gridGuide" class="grid-guide"></div>
+            </div>
+          </div>
+          <p class="drag-hint">Drag the image to adjust position · Scroll or use two fingers to zoom</p>
+        </div>
+        <aside class="controls" aria-label="Avatar adjustment options">
+          <div class="control-group">
+            <div class="control-label"><label for="zoomRange">Zoom</label><output id="zoomOutput">100%</output></div>
+            <input id="zoomRange" type="range" min="1" max="4" value="1" step="0.01">
+            <div class="range-labels"><span>Zoom out</span><span>Zoom in</span></div>
+          </div>
+          <div class="control-group switches">
+            <label class="switch-row"><span><b>Reference line</b><small>Help align the face and line of sight</small></span><input id="gridToggle" type="checkbox" checked><i aria-hidden="true"></i></label>
+            <label class="switch-row"><span><b>Safety margin</b><small>Avoid placing content too close to the edges of the avatar.</small></span><input id="safeToggle" type="checkbox" checked><i aria-hidden="true"></i></label>
+          </div>
+          <button class="text-button" id="resetButton" type="button">Reset Position and Scale</button>
+        </aside>
+      </div>
+      <div class="dialog-footer">
+        <p>Export size <strong>1024 × 1024 px</strong></p>
+        <div><button class="button button-secondary" id="cancelButton" type="button">Cancel</button><button class="button button-primary" id="applyButton" type="button">Apply</button></div>
+      </div>
+    </div>
+  </dialog>
+
+  <canvas id="outputCanvas" width="1024" height="1024" hidden></canvas>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
